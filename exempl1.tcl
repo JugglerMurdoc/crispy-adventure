@@ -1,5 +1,18 @@
 #Create a simulator object
 set ns [new Simulator]
+#        n1               
+#         \               
+# 1Mb,10ms \  1Mb,10ms  
+#           n0------------n3
+# 1Mb,10ms /              
+#         /               
+#        n2               
+
+
+set nf [open out.nam w]
+#$ns namtrace-all $nf
+#$ns color 1 Blue
+#$ns color 2 Red
 
 #Open the output files
 set f0 [open out0.tr w]
@@ -14,7 +27,7 @@ proc finish {} {
         close $f0
 	close $f1
 	#Execute nam on the trace file
- 	# exec nam out.nam &
+ 	#exec nam out.nam &
         exit 0
 }
 
@@ -27,7 +40,9 @@ set n3 [$ns node]
 #Create a duplex link between the nodes
 $ns duplex-link $n0 $n1 1Mb 10ms DropTail
 $ns duplex-link $n0 $n2 1Mb 10ms DropTail
-$ns duplex-link $n0 $n3 1Mb 10ms DropTail
+$ns duplex-link $n0 $n3 1Mb 10ms DropTail queuePos 0.5
+$ns queue-limit $n0 $n3    100B 
+$ns queue-limit $n3 $n0    5B
 
 #Create a UDP agent and attach it to node n0
 set udp1 [new Agent/UDP]
@@ -35,13 +50,16 @@ $ns attach-agent $n1 $udp1
 set udp2 [new Agent/UDP]
 $ns attach-agent $n2 $udp2
 
+$udp1 set class_ 1
+$udp2 set class_ 2
+
 # Create a CBR traffic source and attach it to udp0
 set cbr0 [new Application/Traffic/CBR]
-$cbr0 set packetSize_ 500
+$cbr0 set packetSize_ 500B
 $cbr0 set interval_ 0.005
 $cbr0 attach-agent $udp1
 set cbr1 [new Application/Traffic/CBR]
-$cbr1 set packetSize_ 500
+$cbr1 set packetSize_ 500B
 $cbr1 set interval_ 0.005
 $cbr1 attach-agent $udp2
 
@@ -56,19 +74,13 @@ $ns connect $udp1 $sink0
 $ns connect $udp2 $sink1    
 
 #Set queue monitor
-$ns monitor-queue $n0 $n3 $fQueue 0.5
+set qm [$ns monitor-queue $n0 $n3 $fQueue 0.2];
 
-#Schedule events for the CBR agent
-$ns at 1.0 "$cbr0 start"
-$ns at 29.5 "$cbr0 stop"
-#Schedule events for the CBR agent
-$ns at 0.05 "$cbr1 start"
-$ns at 29.5 "$cbr1 stop"
-#Start queue monitoring
-[$ns link $n0 $n3] queue-sample-timeout
+
+
 
 #Call the finish procedure after 5 seconds of simulation time
-$ns at 30.0 "finish"
+$ns at 5.0 "finish"
 
 #Define a procedure which periodically records the bandwidth received by the
 #three traffic sinks sink0/1/2 and writes it to the three files f0/1/2.
@@ -93,6 +105,14 @@ proc record {} {
         $ns at [expr $now+$time] "record"
 }
 
+#Schedule events for the CBR agent
+$ns at 1.0 "$cbr0 start"
+$ns at 29.5 "$cbr0 stop"
+#Schedule events for the CBR agent
+$ns at 1.0 "$cbr1 start"
+$ns at 29.5 "$cbr1 stop"
+#Start queue monitoring
+[$ns link $n0 $n3] queue-sample-timeout
 #Start logging the received bandwidth
 $ns at 0.0 "record"
 
