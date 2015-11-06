@@ -1,8 +1,8 @@
 #Create a simulator object
 set ns [new Simulator]
-#        n1                   n3/sink3
+#        n1                    n3/sink3
 #         \                   /
-# 10Mb,2ms \  10Mb,10ms      /
+# 10Mb,2ms \  0.5Mb,10ms     /
 #           r1------------r2
 # 10Mb,3ms /                \
 #         /                  \
@@ -47,20 +47,21 @@ $ns duplex-link $n2 $r1 10Mb 3ms DropTail
 $ns duplex-link $n3 $r2 10Mb 4ms DropTail
 $ns duplex-link $n4 $r2 10Mb 5ms DropTail
 
-$ns duplex-link $r1 $r2 1Mb 20ms DropTail
+$ns duplex-link $r1 $r2 10Mb 5ms DropTail 
+$ns duplex-link-op $r1 $r2 queuePos 1
 
-$ns queue-limit $r1 $r2   100B
+$ns queue-limit $r1 $r2   50B
 
 #TCP Agents
-set tcp1 [new Agent/TCP]
-$ns attach-agent $n1 $tcp1
-set tcp2 [new Agent/TCP]
-$ns attach-agent $n2 $tcp2
+set tcp1 [new Agent/TCP/Newreno]
+$ns attach-agent $n2 $tcp1
+set tcp2 [new Agent/TCP/Vegas]
+$ns attach-agent $n1 $tcp2
 
 $tcp1 set class_ 1
 $tcp2 set class_ 2
-$tcp1 set window_ 15
-$tcp2 set window_ 15
+$tcp1 set window_ 20
+$tcp2 set window_ 20
 
 
 

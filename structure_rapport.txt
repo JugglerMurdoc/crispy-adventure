@@ -1,0 +1,7 @@
+EXERCICE I
+1. Concurrence entre les deux flux UDP et rôle du type de file
+2. Etude des files d'attente des différents liens avec 100 flux udp.
+
+EXERCICE II
+
+
